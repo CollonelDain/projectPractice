@@ -20,6 +20,16 @@ from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from nutrition import views as nutrition_views
+from rest_framework import routers
+from nutrition import views_api
+from rest_framework.authtoken.views import obtain_auth_token
+
+
+router = routers.DefaultRouter()
+router.register(r'api/foods', views_api.FoodViewSet, basename='food')
+router.register(r'api/meals', views_api.MealViewSet, basename='meal')
+router.register(r'api/profile', views_api.UserProfileViewSet, basename='profile')
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -31,4 +41,7 @@ urlpatterns = [
     path('foods/', nutrition_views.food_list, name='food_list'),
     path('foods/add/', nutrition_views.add_food, name='add_food'),
     path('meals/add/', nutrition_views.add_meal, name='add_meal'),
+    path('', include(router.urls)),
+    path('api-auth/', include('rest_framework.urls')),
+    path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
 ]
