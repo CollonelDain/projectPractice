@@ -1,0 +1,55 @@
+{% extends 'nutrition/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2>Добро пожаловать, {{ user.username }}!</h2>
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Сегодняшняя статистика</h4>
+            </div>
+            <div class="card-body">
+                <p>Потреблено калорий: {{ total_calories }} из {{ profile.daily_calorie_goal }}</p>
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" 
+                         style="width: total_calories">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <h4>Последние приемы пищи</h4>
+        {% for meal in meals %}
+        <div class="card mb-3">
+            <div class="card-header">
+                {{ meal.get_meal_type_display }} - {{ meal.date }}
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for mf in meal.mealfood_set.all %}
+                    <li class="list-group-item">
+                        {{ mf.food.name }} - {{ mf.calories|floatformat }} ккал ({{ mf.quantity }} пор.)
+                    </li>
+                    {% endfor %}
+                </ul>
+                <p class="mt-2">Всего: {{ meal.total_calories|floatformat }} ккал</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h4>Мой профиль</h4>
+            </div>
+            <div class="card-body">
+                <p>Вес: {{ profile.weight|default:"Не указан" }} кг</p>
+                <p>Рост: {{ profile.height|default:"Не указан" }} см</p>
+                <p>Цель по калориям: {{ profile.daily_calorie_goal }} ккал/день</p>
+                <a href="{% url 'profile' %}" class="btn btn-primary">Редактировать профиль</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
