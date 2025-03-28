@@ -1,88 +1,80 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth import login
-from django.contrib.auth.models import User
+from rest_framework import viewsets
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from django.urls import get_resolver, URLPattern, URLResolver
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+import os
+
+
 from .models import Food, Meal, MealFood, UserProfile
-from .forms import FoodForm, MealForm, MealFoodForm, UserRegisterForm, UserProfileForm
+from .serializers import *
 
-def register(request):
-    if request.method == 'POST':
-        form = UserRegisterForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            # Создаем профиль для нового пользователя
-            UserProfile.objects.create(user=user)
-            login(request, user)
-            return redirect('dashboard')
-    else:
-        form = UserRegisterForm()
-    return render(request, 'nutrition/register.html', {'form': form})
 
-@login_required
-def dashboard(request):
-    meals = Meal.objects.filter(user=request.user).order_by('-date')[:7]
-    profile = UserProfile.objects.get(user=request.user)
-    
-    # Расчет суммарных показателей за сегодня
-    today_meals = meals.filter(date=timezone.now().date())
-    total_calories = sum(meal.total_calories() for meal in today_meals)
-    
-    return render(request, 'nutrition/dashboard.html', {
-        'meals': meals,
-        'profile': profile,
-        'total_calories': total_calories,
+class FoodViewSet(viewsets.ModelViewSet):
+    queryset = Food.objects.all()
+    serializer_class = FoodSerializer
+
+class MealViewSet(viewsets.ModelViewSet):
+    queryset = Meal.objects.all()
+    serializer_class = MealSerializer
+
+class MealFoodViewSet(viewsets.ModelViewSet):
+    queryset = MealFood.objects.all()
+    serializer_class = MealFoodSerializer
+
+class UserProfileViewSet(viewsets.ModelViewSet):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
+
+
+@api_view(['GET'])
+def api_home(request):
+    """
+    Возвращает список всех доступных маршрутов API во всем проекте.
+    """
+    url_resolver = get_resolver()
+    api_endpoints = collect_routes(url_resolver.url_patterns, request)
+
+    return Response({
+        'message': 'Список всех доступных маршрутов API',
+        'routes': api_endpoints,
+        'total': len(api_endpoints)
     })
 
-@login_required
-def profile(request):
-    profile = UserProfile.objects.get(user=request.user)
-    if request.method == 'POST':
-        form = UserProfileForm(request.POST, instance=profile)
-        if form.is_valid():
-            form.save()
-            return redirect('dashboard')
-    else:
-        form = UserProfileForm(instance=profile)
-    return render(request, 'nutrition/profile.html', {'form': form})
+def collect_routes(patterns, request, prefix=""):
+    """
+    Рекурсивно собирает все маршруты API во всем Django-проекте и корректно формирует URL.
+    """
+    routes = []
+    base_url = get_base_url(request)  # Определяем базовый URL
 
-
-@login_required
-def add_food(request):
-    if request.method == 'POST':
-        form = FoodForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('food_list')
-    else:
-        form = FoodForm()
-    return render(request, 'nutrition/food_form.html', {'form': form})
-
-@login_required
-def food_list(request):
-    foods = Food.objects.all()
-    return render(request, 'nutrition/food_list.html', {'foods': foods})
-
-@login_required
-def add_meal(request):
-    if request.method == 'POST':
-        meal_form = MealForm(request.POST)
-        meal_food_form = MealFoodForm(request.POST)
-        
-        if meal_form.is_valid() and meal_food_form.is_valid():
-            meal = meal_form.save(commit=False)
-            meal.user = request.user
-            meal.save()
+    for pattern in patterns:
+        if isinstance(pattern, URLPattern):  # Обычный маршрут (конкретный URL)
+            route = f"{base_url}/{prefix}{pattern.pattern}"
             
-            meal_food = meal_food_form.save(commit=False)
-            meal_food.meal = meal
-            meal_food.save()
+            # Проверяем, содержит ли маршрут символ "<" (используется в регулярных выражениях)
+            if "<" in route:
+                continue  # Пропускаем этот маршрут
             
-            return redirect('dashboard')
+            route = route.replace("^", "").replace("$", "").replace("\\", "")  # Убираем спецсимволы
+            routes.append({
+                'url': route,
+                'name': pattern.name or str(pattern.pattern)
+            })
+        elif isinstance(pattern, URLResolver):  # Вложенные маршруты (include)
+            routes.extend(collect_routes(pattern.url_patterns, request, f"{prefix}{pattern.pattern}"))
+
+    return routes
+
+
+def get_base_url(request=None):
+    """
+    Возвращает базовый URL в зависимости от окружения
+    """
+    if 'CODESPACE_NAME' in os.environ:
+        codespace_name = os.environ.get('CODESPACE_NAME')
+        return f"https://{codespace_name}-8000.app.github.dev"
     else:
-        meal_form = MealForm()
-        meal_food_form = MealFoodForm()
-    
-    return render(request, 'nutrition/meal_form.html', {
-        'meal_form': meal_form,
-        'meal_food_form': meal_food_form
-    })
+        return "http://localhost:8000"  # Фиксированный хост

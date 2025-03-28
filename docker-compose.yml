@@ -1,0 +1,32 @@
+version: '3.9'
+
+services:
+  
+
+  backend:
+    build:
+      context: ./djangotutorial
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - sqlite_data:/app  # Том для сохранения db.sqlite3
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  dash:
+    build:
+      context: ./Dash
+      dockerfile: Dockerfile
+    ports:
+      - "8050:8050"
+    volumes:
+      - ./Dash:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - backend
+
+volumes:
+  sqlite_data:

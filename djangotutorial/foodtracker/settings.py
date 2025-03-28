@@ -26,7 +26,7 @@ SECRET_KEY = "django-insecure-8e645msf)h6^@os5#+wg7&(g3w8==63@xx1eo(jj74mp^!-u==
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*.app.github.dev', 'backend']
 
 
 # Application definition
@@ -42,6 +42,15 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://localhost:8000",
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "https://localhost:8000",
+]
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -146,4 +155,9 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CSRF_TRUSTED_ORIGINS = ['https://bookish-carnival-4jqq5q7r96p2jr6-8000.app.github.dev/']
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny', 
+    ],
+}
