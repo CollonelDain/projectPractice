@@ -8,17 +8,14 @@ import requests
 
 # Функция получения данных из NocoDB
 def get_nocodb_data():
-    url = "https://bookish-carnival-4jqq5q7r96p2jr6-8000.app.github.dev/nocodb-data/"
+    url = "http://backend:8000/nocodb-data/"
     try:
         response = requests.get(url)
         if response.status_code == 200:
             print(response)
             data = response.json()
-            print(2)
             records = data.get('records', [])
-            print(3)
             print("Полученные данные:", records)
-            print(4)
             cleaned_records = [
                 {k: v for k, v in record.items() if not k.startswith('_nc_m2m_')}
                 for record in records
@@ -36,7 +33,7 @@ app = dash.Dash(__name__)
 
 # Базовый макет приложения
 app.layout = html.Div([
-    html.H1('User Dashboard'),
+    html.H1('Food Dashboard'),
     dcc.Interval(
         id='interval-component',
         interval=1*1000,  # обновление каждую секунду при первой загрузке
@@ -81,27 +78,25 @@ def update_dashboard(n):
                                 x='CreatedAt', 
                                 y='Id',
                                 hover_data=['username', 'email'] if 'username' in df.columns and 'email' in df.columns else [],
-                                title='Временная шкала создания пользователей')
+                                title='Временная шкала создания еды')
     else:
         fig_timeline = px.scatter(title='Нет данных о времени создания')
 
     # Определяем колонки для таблицы
     table_columns = [
         {'name': 'ID', 'id': 'Id'},
-        {'name': 'Username', 'id': 'username'} if 'username' in df.columns else {'name': 'Username', 'id': 'username', 'hidden': True},
-        {'name': 'Email', 'id': 'email'} if 'email' in df.columns else {'name': 'Email', 'id': 'email', 'hidden': True},
-        {'name': 'Role', 'id': 'role'} if 'role' in df.columns else {'name': 'Role', 'id': 'role', 'hidden': True},
-        {'name': 'Status', 'id': 'status'} if 'status' in df.columns else {'name': 'Status', 'id': 'status', 'hidden': True},
-        {'name': 'Created', 'id': 'CreatedAt'} if 'CreatedAt' in df.columns else {'name': 'Created', 'id': 'CreatedAt', 'hidden': True},
+        {'name': 'Name', 'id': 'name'} if 'name' in df.columns else {'name': 'Username', 'id': 'username', 'hidden': True},
+        {'name': 'Caloties', 'id': 'caloties'} if 'caloties' in df.columns else {'name': 'Caloties', 'id': 'caloties', 'hidden': True},
+        {'name': 'Protein', 'id': 'protein'} if 'protein' in df.columns else {'name': 'Protein', 'id': 'protein', 'hidden': True},
+        {'name': 'Carbs', 'id': 'carbs'} if 'carbs' in df.columns else {'name': 'Carbs', 'id': 'carbs', 'hidden': True},
+        {'name': 'Fats', 'id': 'fats'} if 'fats' in df.columns else {'name': 'Fats', 'id': 'fats', 'hidden': True},
     ]
 
     # Возвращаем содержимое dashboard
     return [
         html.Div([
             html.H3('Общая статистика'),
-            html.P(f"Всего пользователей: {len(df)}"),
-            html.P(f"Активных audit logs: {df['audit_logs'].sum() if 'audit_logs' in df.columns else 'N/A'}"),
-            html.P(f"VM deletions: {df['vm_deletion_logs'].sum() if 'vm_deletion_logs' in df.columns else 'N/A'}"),
+            html.P(f"Всего еды: {len(df)}"),
         ], style={'width': '30%', 'display': 'inline-block', 'verticalAlign': 'top'}),
         
         html.Div([
@@ -122,3 +117,4 @@ def update_dashboard(n):
 # Запуск приложения
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8050, debug=True)
+#    app.run_server(host='0.0.0.0', port=8050, debug=True)
